@@ -1,0 +1,10 @@
+# Example: a single 48 px wide bar on the left edge:
+#   the clock (face: plugins.d/clock.svg) at the top,
+#   today's calendar filling the middle (time runs top → bottom),
+#   a 4×4 workspace grid and the window icons at the bottom.
+# Try it with:
+#   days-of-our-lives --config-dir examples/left-clock
+
+[bars.left]
+output = "*"          # a copy on every display
+edge = "left"         # vertical bar; its width is set in style.css

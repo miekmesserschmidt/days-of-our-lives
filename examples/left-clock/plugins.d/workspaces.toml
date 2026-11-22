@@ -1,0 +1,8 @@
+plugin = "workspaces"
+columns = 4
+rows = 4                   # workspaces 1–16
+
+[position]
+bar = "left"
+section = "end"
+order = 2

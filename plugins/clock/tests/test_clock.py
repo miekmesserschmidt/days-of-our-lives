@@ -39,6 +39,11 @@ def test_auto_interval_follows_the_second_hand(tmp_path):
     assert 'viewBox="0 0 10 10"' in c.render(frame())
 
 
+def test_viewbox_is_added_after_an_xml_declaration():
+    svg = '<?xml version="1.0"?>\n<svg\n   width="300"\n   height="300" xmlns="http://www.w3.org/2000/svg"></svg>'
+    assert clock.with_viewbox(svg) == '<?xml version="1.0"?>\n<svg viewBox="0 0 300 300"\n   width="300"\n   height="300" xmlns="http://www.w3.org/2000/svg"></svg>'
+
+
 def test_broken_face_falls_back_to_default(tmp_path, capsys):
     (tmp_path / "bad.svg").write_text("<svg/>")
     c = make({"face": str(tmp_path / "bad.svg")})

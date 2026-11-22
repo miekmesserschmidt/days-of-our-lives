@@ -70,8 +70,13 @@ Only one bar process runs per Wayland display, so doing both is harmless.
 
 User files are deep-merged over the global ones (tables key by key; other values are
 replaced). A user `plugins.d/clock.toml` overrides the global `clock.toml`;
-`enabled = false` switches a global bar or plugin instance off. Examples are in
-[examples/etc/days-of-our-lives](examples/etc/days-of-our-lives).
+`enabled = false` switches a global bar or plugin instance off. Examples:
+
+- [examples/etc/days-of-our-lives](examples/etc/days-of-our-lives) — a global config
+  with a top bar.
+- [examples/left-clock](examples/left-clock) — a 48 px wide bar on the left: clock
+  (custom face `plugins.d/clock.svg`), vertical calendar, 4×4 workspace grid and window
+  icons. Try it with `days-of-our-lives --config-dir examples/left-clock`.
 
 ```toml
 # config.toml
@@ -92,10 +97,12 @@ margin = [8, 0, 8, 8]
 ```toml
 # plugins.d/calendar.toml — every plugin file has a [position] block
 plugin = "calendar"
+refresh_seconds = 120    # reload cadence of the feeds
 [[calendars]]
 name = "work"
 url_file = "~/.config/days-of-our-lives/secrets/work-ics-url"   # keeps the secret URL out of the config
 color = "#89b4fa"
+show_text = true         # false: draw this feed's events without titles
 
 [position]
 bar = ["main", "side"]   # one bar or several

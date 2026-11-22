@@ -28,6 +28,8 @@ pub struct Event {
     pub calendar: String,
     pub color: String,
     pub all_day: bool,
+    /// Draw the title on the bar (per feed; set by the plugin after expanding).
+    pub show_text: bool,
 }
 
 fn unfold(text: &str) -> Vec<String> {
@@ -263,6 +265,7 @@ pub fn expand(ics: &str, day: NaiveDate, calendar: &str, color: &str) -> Vec<Eve
                     calendar: calendar.to_owned(),
                     color: color.to_owned(),
                     all_day,
+                    show_text: true,
                 });
             }
         }

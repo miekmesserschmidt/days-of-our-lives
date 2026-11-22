@@ -1,0 +1,8 @@
+plugin = "windows"
+columns = 2                # one icon per row on a vertical bar
+rows = 7                   # more windows → the last cell shows "+N"
+
+[position]
+bar = "left"
+section = "end"
+order = 1

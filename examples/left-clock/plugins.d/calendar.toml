@@ -1,0 +1,24 @@
+plugin = "calendar"
+refresh_seconds = 120     # reload the feeds every 2 minutes
+orientation = "vertical"   # time runs top → bottom
+hour_labels = false        # no room for labels in 48 px
+
+# Two mock feeds next to this file (recurring events, so every day has some).
+# For real feeds use `url = "https://…"` or `url_file = "…"` (a file holding a
+# secret URL) instead of `path`.
+[[calendars]]
+name = "work"
+path = "mock-work.ics"
+color = "#89b4fa"
+
+[[calendars]]
+name = "personal"
+path = "mock-personal.ics"
+color = "#a6e3a1"
+show_text = false          # coloured blocks only; hover shows the event name
+
+[position]
+bar = "left"
+section = "start"
+expand = true   
+order=2           # take all the space between the clock and the workspaces

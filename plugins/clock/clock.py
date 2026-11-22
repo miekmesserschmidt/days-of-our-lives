@@ -15,8 +15,8 @@ from analogue_clock import AnalogueClock  # noqa: E402
 
 DEFAULT_CONFIG = """\
 plugin = "clock"
-# Face SVG with ids hour-hand, minute-hand and optionally second-hand.
-# Relative paths are relative to this file; "" = the library's default face.
+# "" = the face bundled with the plugin, or a path to an SVG with ids hour-hand,
+# minute-hand and optionally second-hand (relative paths are relative to this file).
 face = ""
 # "auto" = 1 if the face has a second hand, else 60; or a number of seconds.
 update_interval_seconds = "auto"
@@ -43,14 +43,18 @@ def bundled_face():
 
 def with_viewbox(svg):
     """Make sure the face scales exactly: add a viewBox from width/height if missing."""
-    head = svg[: svg.find(">") + 1]
+    start = svg.find("<svg")  # skips an <?xml …?> declaration
+    end = svg.find(">", start)
+    if start < 0 or end < 0:
+        return svg
+    head = svg[start : end + 1]
     if "viewBox" in head:
         return svg
     w = re.search(r'\bwidth="([\d.]+)', head)
     h = re.search(r'\bheight="([\d.]+)', head)
     if not (w and h):
         return svg
-    return svg.replace("<svg", f'<svg viewBox="0 0 {w.group(1)} {h.group(1)}"', 1)
+    return svg[:start] + f'<svg viewBox="0 0 {w.group(1)} {h.group(1)}"' + svg[start + 4 :]
 
 
 class Clock(dool_plugin.Plugin):

@@ -1,0 +1,12 @@
+/* 48 px wide: no horizontal padding, so min-width is the whole width. */
+.bar#left {
+  min-width: 64px;
+  padding: 4px 0;
+}
+.bar#left .section { border-spacing: 6px; }
+
+/* Heights along the vertical bar (each slot is as wide as the bar). */
+#clock      { min-height: 64px; }   /* a square face */
+#workspaces { min-height: 32px; }   /* 4 × 4 cells of 16:9 in 64 px */
+#windows    { min-height: 280px; }  /* 5 icons of 56 px */
+#calendar    { min-height: 600px; }  /* 5 icons of 56 px */

@@ -1,4 +1,5 @@
 plugin = "calendar"
+refresh_seconds = 120     # reload the feeds every 2 minutes
 orientation = "auto"           # horizontal | vertical | auto (= follow the bar)
 enabled = false                # add your feeds, then remove this line
 

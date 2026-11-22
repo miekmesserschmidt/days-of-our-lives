@@ -1,0 +1,6 @@
+plugin = "clock"
+face = "clock.svg"    # next to this file (relative paths are relative to plugins.d/)
+
+[position]
+bar = "left"
+section = "start"

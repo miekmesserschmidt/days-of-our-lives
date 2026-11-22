@@ -17,7 +17,8 @@ use std::time::Duration;
 const DEFAULT_CONFIG: &str = r##"plugin = "calendar"
 # horizontal | vertical | auto (= follow the bar)
 orientation = "auto"
-refresh_minutes = 10
+# How often every feed (url, url_file or path) is reloaded, in seconds (minimum 10).
+refresh_seconds = 120
 show_all_day = true
 hour_labels = true
 now_line_color = "#ff5555"
@@ -31,12 +32,15 @@ tooltip = true
 tooltip_details = true
 hover_outline = ""
 
-# One table per feed: `url` (https://, webcal:// or file://) or `url_file`
-# (a file that contains a secret URL), plus a colour.
+# One table per feed, with a colour and exactly one of: `url` (https://, webcal://
+# or file://), `url_file` (a file that contains a secret URL) or `path` (a local
+# .ics file; relative paths are relative to this file).
+# show_text = false draws the feed's events without titles (hover still shows them).
 [[calendars]]
 name = "work"
 url = "https://example.com/work.ics"
 color = "#89b4fa"
+show_text = true
 
 [position]
 bar = "main"
@@ -53,14 +57,23 @@ struct Feed {
     url: String,
     #[serde(default)]
     url_file: String,
+    #[serde(default)]
+    path: String,
     color: String,
+    /// Draw event titles on the bar (tooltips are shown either way).
+    #[serde(default = "yes")]
+    show_text: bool,
+}
+
+fn yes() -> bool {
+    true
 }
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields, default)]
 struct Config {
     orientation: String,
-    refresh_minutes: u64,
+    refresh_seconds: u64,
     show_all_day: bool,
     hour_labels: bool,
     now_line_color: String,
@@ -78,7 +91,7 @@ impl Default for Config {
     fn default() -> Self {
         Config {
             orientation: "auto".into(),
-            refresh_minutes: 10,
+            refresh_seconds: 120,
             show_all_day: true,
             hour_labels: true,
             now_line_color: "#ff5555".into(),
@@ -145,13 +158,16 @@ impl Calendar {
                 check_color(c).map_err(|e| anyhow::anyhow!("{key}: {e}"))?;
             }
         }
+        if cfg.refresh_seconds < 10 {
+            bail!("refresh_seconds: must be at least 10, got {}", cfg.refresh_seconds);
+        }
         if !["auto", "horizontal", "vertical"].contains(&cfg.orientation.as_str()) {
             bail!("orientation: expected horizontal | vertical | auto, got {:?}", cfg.orientation);
         }
         for (i, f) in cfg.calendars.iter().enumerate() {
             check_color(&f.color).map_err(|e| anyhow::anyhow!("calendars[{i}].color: {e}"))?;
-            if f.url.is_empty() == f.url_file.is_empty() {
-                bail!("calendars[{i}]: set exactly one of url and url_file");
+            if [&f.url, &f.url_file, &f.path].iter().filter(|s| !s.is_empty()).count() != 1 {
+                bail!("calendars[{i}]: set exactly one of url, url_file and path");
             }
         }
         Ok(())
@@ -169,7 +185,11 @@ impl Calendar {
         let mut events = Vec::new();
         for (feed, text) in self.cfg.calendars.iter().zip(&self.feeds) {
             if let Some(text) = text {
-                events.extend(ics::expand(text, self.day, &feed.name, &feed.color));
+                let mut expanded = ics::expand(text, self.day, &feed.name, &feed.color);
+                for e in &mut expanded {
+                    e.show_text = feed.show_text;
+                }
+                events.extend(expanded);
             }
         }
         events.sort_by_key(|e| (e.start, e.end));
@@ -208,17 +228,19 @@ impl Plugin for Calendar {
         Calendar::check(&cfg)?;
         let mut urls = Vec::new();
         for (i, f) in cfg.calendars.iter().enumerate() {
-            let url = if f.url.is_empty() {
+            let url = if !f.url.is_empty() {
+                f.url.clone()
+            } else if !f.path.is_empty() {
+                format!("file://{}", frame.resolve_path(&f.path).display())
+            } else {
                 let path = frame.resolve_path(&f.url_file);
                 std::fs::read_to_string(&path).map_err(|e| anyhow::anyhow!("calendars[{i}].url_file {}: {e}", path.display()))?.trim().to_owned()
-            } else {
-                f.url.clone()
             };
             urls.push(url);
         }
         // Cached copies make events appear instantly (and offline).
         let feeds: Vec<Option<String>> = (0..urls.len()).map(|i| std::fs::read_to_string(cache_path(&frame.instance, i)).ok()).collect();
-        let refresh = Duration::from_secs(cfg.refresh_minutes.max(1) * 60);
+        let refresh = Duration::from_secs(cfg.refresh_seconds);
         for (i, url) in urls.into_iter().enumerate() {
             let tx = tx.clone();
             std::thread::spawn(move || loop {
@@ -318,7 +340,7 @@ impl Plugin for Calendar {
             };
             s.rect(r.x, r.y, r.w, r.h, &format!(r#"id="ev-{i}" rx="2" fill="{}" fill-opacity="0.85"{outline}"#, e.color));
             let size = font.min(r.h * 0.8);
-            if !e.all_day && r.w >= 14.0 && r.h >= 7.0 {
+            if e.show_text && !e.all_day && r.w >= 14.0 && r.h >= 7.0 {
                 // A nested <svg> clips the title to its event.
                 s.raw(&format!(
                     r#"<svg x="{}" y="{}" width="{}" height="{}"><text x="2" y="{}" font-size="{}" font-family="{family}" fill="{}">{}</text></svg>"#,
@@ -374,6 +396,7 @@ mod tests {
             calendar: "work".into(),
             color: "#89b4fa".into(),
             all_day: false,
+            show_text: true,
         };
         Calendar {
             cfg: Config::default(),
@@ -403,6 +426,17 @@ mod tests {
     }
 
     #[test]
+    fn show_text_false_hides_titles_but_keeps_the_events() {
+        let mut c = cal();
+        c.events[1].show_text = false;
+        let svg = c.render(&frame(480.0, 30.0, "horizontal"));
+        assert!(svg.contains(">Standup<") && !svg.contains(">Lunch<"), "{svg}");
+        assert!(svg.contains(r#"id="ev-1""#));
+        let feed: Feed = serde_json::from_value(serde_json::json!({"path": "a.ics", "color": "#fff"})).unwrap();
+        assert!(feed.show_text, "titles are shown by default");
+    }
+
+    #[test]
     fn hover_shows_name_tooltip_anchored_at_the_event() {
         let mut c = cal();
         let f = frame(480.0, 30.0, "horizontal");
@@ -427,5 +461,9 @@ mod tests {
         let cfg: Config = serde_json::from_value(serde_json::json!({"calendars": [{"url": "file:///x.ics", "color": "#12"}]})).unwrap();
         let err = Calendar::check(&cfg).unwrap_err().to_string();
         assert!(err.contains("calendars[0].color") && err.contains("#12"), "{err}");
+        let two: Config = serde_json::from_value(serde_json::json!({"calendars": [{"url": "file:///x.ics", "path": "x.ics", "color": "#123"}]})).unwrap();
+        assert!(Calendar::check(&two).unwrap_err().to_string().contains("exactly one of url, url_file and path"));
+        let fast: Config = serde_json::from_value(serde_json::json!({"refresh_seconds": 5})).unwrap();
+        assert!(Calendar::check(&fast).unwrap_err().to_string().contains("refresh_seconds"));
     }
 }

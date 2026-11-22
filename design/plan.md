@@ -732,7 +732,7 @@ either the library's default face or your own SVG face (any SVG with elements
 
 | Key | Default | Meaning |
 |-----|---------|---------|
-| `face` | `""` | path to a face SVG; relative paths are resolved against `config_dir`; `""` = library default face |
+| `face` | `""` | `""` = the bundled face, or a path to a face SVG (relative paths are resolved against `config_dir`) |
 | `update_interval_seconds` | `"auto"` | `"auto"` = 1 if the face has a `second-hand`, else 60; or a number |
 | `timezone` | `""` | IANA zone (e.g. `"Africa/Johannesburg"`) via `zoneinfo`; `""` = local time |
 | `tooltip_format` | `"%A, %d %B %Y"` | `strftime` format shown on hover; `""` = no tooltip |
@@ -782,7 +782,7 @@ Crates: `ureq` (HTTP), `icalendar` (parse), `rrule` (recurrences), `chrono`, `ch
 | Key | Default | Meaning |
 |-----|---------|---------|
 | `orientation` | `"auto"` | `horizontal` \| `vertical` \| `auto` (= follow the bar) |
-| `refresh_minutes` | `10` | how often feeds are re-downloaded |
+| `refresh_seconds` | `120` | reload cadence of every feed (`url`, `url_file` or `path`), in seconds; minimum 10 |
 | `show_all_day` | `true` | thin strip for all-day events |
 | `hour_labels` | `true` | hour ticks with labels (every 1/3/6 h depending on available length) |
 | `now_line_color` | `"#ff5555"` | colour of the now line |
@@ -792,7 +792,7 @@ Crates: `ureq` (HTTP), `icalendar` (parse), `rrule` (recurrences), `chrono`, `ch
 | `tooltip` | `true` | show a tooltip with the event's name when hovering an event |
 | `tooltip_details` | `true` | add time range, calendar name and location (if any) below the name |
 | `hover_outline` | `""` | outline colour of the hovered event; `""` = `style.color` |
-| `[[calendars]]` | — | one table per feed: `url` (https:// or file://) **or** `url_file` (a file containing a secret URL), `color`, optional `name` |
+| `[[calendars]]` | — | one table per feed: exactly one of `url` (https://, webcal:// or file://), `url_file` (a file containing a secret URL) or `path` (a local .ics file, relative to the instance's file); `color`; optional `name`; optional `show_text` (default `true`; `false` draws that feed's events without titles, tooltips still work) |
 
 ```toml
 plugin = "calendar"
@@ -814,7 +814,7 @@ expand = true
 
 **State and threads:**
 
-- One **fetcher thread** per feed: download every `refresh_minutes` →
+- One **fetcher thread** per feed: reload every `refresh_seconds` →
   `Msg::Fetched(i, Result<String>)`. Successful downloads are cached in
   `~/.cache/days-of-our-lives/calendar/<instance>-<i>.ics`; the cache is loaded at
   start so events appear instantly and survive being offline. Failures keep the last

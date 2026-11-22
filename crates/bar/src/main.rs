@@ -102,8 +102,9 @@ fn main() {
 
 fn real_main() -> Result<()> {
     let args = parse_args()?;
-    let user_dir = args.config_dir.clone().unwrap_or_else(config::default_user_dir);
-    let global_dir = config::default_global_dir();
+    // Absolute, because plugins run in $HOME and resolve relative paths against these.
+    let user_dir = std::path::absolute(args.config_dir.clone().unwrap_or_else(config::default_user_dir))?;
+    let global_dir = std::path::absolute(config::default_global_dir())?;
     let cmd: Vec<&str> = args.command.iter().map(String::as_str).collect();
     match cmd.as_slice() {
         [] | ["run"] => {
