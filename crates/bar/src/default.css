@@ -1,0 +1,30 @@
+/* Built-in default style of days-of-our-lives. Override in /etc/days-of-our-lives/style.css
+   or ~/.config/days-of-our-lives/style.css (both reload live). This is GTK4 CSS. */
+
+window.dool-window { background: transparent; }
+
+.bar {
+  background-color: rgba(30, 30, 46, 0.80);
+  color: #cdd6f4;
+  font-family: sans-serif;
+  font-size: 11px;
+  padding: 2px 6px;
+}
+.bar.horizontal { min-height: 32px; }
+.bar.vertical   { min-width: 32px; padding: 6px 2px; }
+.bar.horizontal .slot { min-width: 32px; }
+.bar.vertical   .slot { min-height: 32px; }
+
+.section { border-spacing: 8px; }
+
+.slot { border-radius: 6px; }
+.slot:hover { background-color: rgba(255, 255, 255, 0.08); }
+.slot.crashed { background-color: rgba(243, 139, 168, 0.30); }
+.slot.missing { background-color: rgba(250, 179, 135, 0.30); }
+
+tooltip {
+  background-color: rgba(17, 17, 27, 0.95);
+  color: #cdd6f4;
+  border: 1px solid #45475a;
+  border-radius: 6px;
+}

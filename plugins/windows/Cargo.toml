@@ -1,0 +1,14 @@
+[package]
+name = "dool-plugin-windows"
+description = "days-of-our-lives plugin: an icon per window on the active workspace"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+dool-plugin-sdk = { workspace = true, features = ["hypr"] }
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+log.workspace = true
+freedesktop-icons = "0.4"

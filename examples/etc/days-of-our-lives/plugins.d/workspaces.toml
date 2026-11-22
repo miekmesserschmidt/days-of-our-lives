@@ -1,0 +1,9 @@
+plugin = "workspaces"
+columns = 3
+rows = 2
+show_numbers = true
+
+[position]
+bar = "main"
+section = "end"
+order = 1

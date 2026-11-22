@@ -1,0 +1,14 @@
+[Unit]
+Description=days-of-our-lives desktop bar
+Documentation=https://github.com/miekmesserschmidt/days-of-our-lives
+PartOf=graphical-session.target
+After=graphical-session.target
+Requisite=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/days-of-our-lives
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=graphical-session.target

@@ -1,0 +1,13 @@
+[package]
+name = "dool-plugin-workspaces"
+description = "days-of-our-lives plugin: a grid of Hyprland workspaces with their windows"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+dool-plugin-sdk = { workspace = true, features = ["hypr"] }
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+log.workspace = true

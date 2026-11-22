@@ -1,0 +1,8 @@
+plugin = "windows"
+columns = 4
+rows = 1
+
+[position]
+bar = "main"
+section = "end"
+order = 2

@@ -1,0 +1,19 @@
+plugin = "calendar"
+orientation = "auto"           # horizontal | vertical | auto (= follow the bar)
+enabled = false                # add your feeds, then remove this line
+
+[[calendars]]
+name = "work"
+# A secret ICS address; keep it out of the config with url_file instead of url:
+url_file = "~/.config/days-of-our-lives/secrets/work-ics-url"
+color = "#89b4fa"
+
+[[calendars]]
+name = "personal"
+url = "https://example.com/personal.ics"
+color = "#a6e3a1"
+
+[position]
+bar = "main"
+section = "center"
+expand = true                  # take the remaining space along the bar

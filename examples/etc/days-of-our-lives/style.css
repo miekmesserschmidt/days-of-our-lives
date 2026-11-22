@@ -1,0 +1,22 @@
+/* Global style (GTK4 CSS), loaded after the built-in default and before the user's
+   ~/.config/days-of-our-lives/style.css. Both reload live on save.
+
+   Selectors:
+     .bar#<bar> .<edge> .horizontal|.vertical .output-<connector>
+     .section.start | .section.center | .section.end
+     .slot#<instance> .plugin-<plugin> .crashed .missing :hover
+     tooltip
+*/
+
+.bar {
+  background-color: rgba(30, 30, 46, 0.80);   /* transparency */
+  color: #cdd6f4;                             /* passed to plugins as their text colour */
+  font-family: sans-serif;
+  font-size: 11px;
+}
+.bar.horizontal { min-height: 32px; }        /* thickness of top/bottom bars */
+.bar.vertical   { min-width: 48px; }         /* thickness of left/right bars */
+
+#clock      { min-width: 32px; }
+#workspaces { min-width: 90px; }
+#windows    { min-width: 128px; }

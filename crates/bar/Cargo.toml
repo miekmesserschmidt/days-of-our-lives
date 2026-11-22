@@ -1,0 +1,21 @@
+[package]
+name = "days-of-our-lives"
+description = "A simple, plugin based desktop bar for Hyprland"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+dool-plugin-sdk = { workspace = true, features = ["hypr"] }
+gtk4.workspace = true
+gtk4-layer-shell.workspace = true
+resvg.workspace = true
+async-channel.workspace = true
+libc.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+log.workspace = true
+dirs.workspace = true
+chrono.workspace = true

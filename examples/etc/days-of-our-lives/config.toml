@@ -1,0 +1,26 @@
+# Global bar configuration. Users override any key in ~/.config/days-of-our-lives/config.toml.
+# Looks (thickness, colours, transparency, fonts) are in style.css.
+
+# Extra directories searched for dool-plugin-* executables before $PATH.
+plugin_path = []
+log_level = "info"          # error | warn | info | debug
+
+# Values shared by all bars.
+[bar_defaults]
+exclusive = true            # reserve screen space so windows don't overlap the bar
+layer = "top"               # background | bottom | top | overlay
+margin = 0                  # px from the screen edges: 6 | [v, h] | [top, right, bottom, left]
+gap = 0                     # extra px kept free between the bar and windows
+
+# One table per bar. output: connector name (`hyprctl monitors`), "*" = every display,
+# "" = the compositor's choice. edge: top | bottom | left | right.
+[bars.main]
+output = "*"
+edge = "top"
+
+# A vertical bar on the left, floating 8 px from the edges:
+# [bars.side]
+# output = "DP-1"
+# edge = "left"
+# margin = [8, 0, 8, 8]
+# gap = 4

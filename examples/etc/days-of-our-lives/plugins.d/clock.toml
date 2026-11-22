@@ -1,0 +1,9 @@
+plugin = "clock"
+face = ""                      # "" = the bundled face; or a path to your own SVG face
+update_interval_seconds = "auto"
+tooltip_format = "%A, %d %B %Y"
+
+[position]
+bar = "main"
+section = "start"
+order = 0

@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+"""Debug plugin: logs every mouse message and draws three id'd hit areas.
+Hovering one shows a tooltip anchored to it. Install as `dool-plugin-mouse-echo`."""
+
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "plugin-sdk-python"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "lib", "dool"))
+import dool_plugin  # noqa: E402
+
+
+class MouseEcho(dool_plugin.Plugin):
+    def __init__(self, config, frame, post):
+        self.hovered = None
+        self.last = ""
+
+    def mouse(self, ev, frame, out):
+        dool_plugin.log("info", " ".join(f"{k}={v}" for k, v in ev.items()))
+        self.last = f"{ev['type']} {ev.get('x', '')},{ev.get('y', '')}"
+        targets = ev.get("targets") or []
+        box = next((t for t in targets if t.startswith("box-")), None)
+        if box:
+            i = int(box[4:])
+            out.tooltip(f"box {i}\nx={ev['x']} y={ev['y']}", {"x": i * 40, "y": 0, "w": 36, "h": 20})
+        else:
+            out.hide_tooltip()
+        self.hovered = box
+        return True
+
+    def render(self, frame):
+        w, h = 120, 20
+        color = frame["style"].get("color") or "#ffffff"
+        parts = []
+        for i in range(3):
+            fill = "#89b4fa" if self.hovered == f"box-{i}" else "#45475a"
+            parts.append(f'<rect id="box-{i}" x="{i * 40}" y="0" width="36" height="{h}" rx="4" fill="{fill}"/>')
+        parts.append(f'<text x="2" y="14" font-size="9" fill="{color}">{self.last[:24]}</text>')
+        return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}">{"".join(parts)}</svg>'
+
+
+dool_plugin.run(
+    MouseEcho,
+    {"name": "mouse-echo", "description": "logs mouse events (debugging)", "version": "0.1.0"},
+    'plugin = "mouse-echo"\n[position]\nbar = "main"\nsection = "center"\n',
+)
