@@ -10,12 +10,14 @@ use serde::Deserialize;
 use std::time::Duration;
 
 const DEFAULT_CONFIG: &str = r##"plugin = "workspaces"
-# Grid size: shows workspaces first .. first + columns*rows - 1.
+# Grid size (columns × rows cells).
 columns = 3
 rows = 2
+# true: the grid lists the workspaces on this bar's display (in id order), with
+# that display's active workspace and windows.
+# false: the grid shows workspaces first .. first + columns*rows - 1 of all displays.
+this_output_only = true
 first = 1
-# true: active workspace and windows of this bar's display only.
-this_output_only = false
 show_windows = true
 show_numbers = false
 active_color = "#cba6f7"
@@ -66,7 +68,7 @@ impl Default for Config {
             columns: 3,
             rows: 2,
             first: 1,
-            this_output_only: false,
+            this_output_only: true,
             show_windows: true,
             show_numbers: false,
             active_color: "#cba6f7".into(),
@@ -110,6 +112,22 @@ impl Workspaces {
     fn bar_monitor(&self, frame: &Frame) -> Option<&Monitor> {
         let m = &self.hypr.monitors;
         m.iter().find(|m| m.name == frame.output).or_else(|| m.iter().find(|m| m.focused)).or(m.first())
+    }
+
+    /// The workspace id of each grid cell; `None` for unused cells.
+    fn shown(&self, frame: &Frame) -> Vec<Option<i64>> {
+        let n = (self.cfg.columns.max(1) * self.cfg.rows.max(1)) as usize;
+        let mon = if self.cfg.this_output_only { self.bar_monitor(frame) } else { None };
+        let mut ids: Vec<Option<i64>> = match mon {
+            Some(m) => {
+                let mut ids: Vec<i64> = self.hypr.workspaces.iter().filter(|w| w.monitor == m.name && w.id > 0).map(|w| w.id).collect();
+                ids.sort_unstable();
+                ids.into_iter().take(n).map(Some).collect()
+            }
+            None => (0..n as i64).map(|i| Some(self.cfg.first + i)).collect(),
+        };
+        ids.resize(n, None);
+        ids
     }
 
     fn active_workspace(&self, frame: &Frame) -> Option<i64> {
@@ -215,19 +233,34 @@ impl Plugin for Workspaces {
                 false
             }
             Mouse::Wheel(_, _, dy) => {
-                let step = if *dy > 0.0 { "m+1" } else { "m-1" };
-                if let Err(e) = hypr::dispatch(&format!("hl.dsp.focus({{ workspace = {} }})", hypr::lua_str(step))) {
-                    log::warn!("{e:#}");
+                let target = if self.cfg.this_output_only {
+                    // Step through this display's workspaces (`m+1` would use the focused display).
+                    let ids: Vec<i64> = self.shown(frame).into_iter().flatten().collect();
+                    let active = self.active_workspace(frame);
+                    match ids.iter().position(|&id| Some(id) == active) {
+                        Some(i) if !ids.is_empty() => {
+                            let j = if *dy > 0.0 { (i + 1) % ids.len() } else { (i + ids.len() - 1) % ids.len() };
+                            Some(ids[j].to_string())
+                        }
+                        _ => ids.first().map(|id| id.to_string()),
+                    }
+                } else {
+                    Some(if *dy > 0.0 { "m+1" } else { "m-1" }.to_owned())
+                };
+                if let Some(t) = target {
+                    if let Err(e) = hypr::dispatch(&format!("hl.dsp.focus({{ workspace = {} }})", hypr::lua_str(&t))) {
+                        log::warn!("{e:#}");
+                    }
                 }
                 false
             }
             Mouse::Leave => self.hovered.take().is_some(),
             Mouse::Enter(p) | Mouse::Move(p) => {
                 if self.cfg.tooltip {
-                    match ws {
-                        Some(ws) => {
+                    match ws.and_then(|ws| Some((ws, self.shown(frame).iter().position(|&s| s == Some(ws))?))) {
+                        Some((ws, i)) => {
                             let g = self.grid(frame);
-                            let cell = self.cell(&g, (ws - self.cfg.first) as u32);
+                            let cell = self.cell(&g, i as u32);
                             out.tooltip(self.tooltip_text(ws, p.target("win-"), frame), Some(cell));
                         }
                         None => out.hide_tooltip(),
@@ -250,9 +283,12 @@ impl Plugin for Workspaces {
         } else {
             self.cfg.window_color.clone()
         };
-        for i in 0..self.cfg.columns * self.cfg.rows {
-            let ws = self.cfg.first + i as i64;
-            let cell = self.cell(&g, i);
+        for (i, ws) in self.shown(frame).into_iter().enumerate() {
+            let cell = self.cell(&g, i as u32);
+            let Some(ws) = ws else {
+                s.rect(cell.x, cell.y, cell.w, cell.h, &format!(r#"rx="2" fill="{}" fill-opacity="0.4""#, self.cfg.workspace_color));
+                continue;
+            };
             let fill = if Some(ws) == self.hovered { &self.cfg.hover_color } else { &self.cfg.workspace_color };
             s.open_group(&format!("ws-{ws}"), "");
             s.rect(cell.x, cell.y, cell.w, cell.h, &format!(r#"rx="2" fill="{fill}""#));
@@ -295,7 +331,7 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dool_plugin_sdk::hypr::WorkspaceRef;
+    use dool_plugin_sdk::hypr::{Workspace, WorkspaceRef};
     use dool_plugin_sdk::{Pointer, Style};
 
     fn frame() -> Frame {
@@ -315,6 +351,10 @@ mod tests {
 
     fn plugin() -> Workspaces {
         let mon = Monitor { id: 0, name: "DP-1".into(), width: 1600.0, height: 900.0, x: 0.0, y: 0.0, scale: 1.0, focused: true, active_workspace: WorkspaceRef { id: 2, name: "2".into() }, ..Default::default() };
+        let hdmi = Monitor { id: 1, name: "HDMI-A-2".into(), width: 1920.0, height: 1080.0, x: 1600.0, y: 0.0, scale: 1.0, active_workspace: WorkspaceRef { id: 24, name: "24".into() }, ..Default::default() };
+        let ws = |id: i64, monitor: &str| Workspace { id, name: id.to_string(), monitor: monitor.into(), windows: 0 };
+        let mut workspaces: Vec<Workspace> = (1..=7).map(|id| ws(id, "DP-1")).collect();
+        workspaces.extend([ws(24, "HDMI-A-2"), ws(18, "HDMI-A-2"), ws(-98, "HDMI-A-2")]);
         let client = |addr: &str, ws: i64, at: [f64; 2], size: [f64; 2], focus: i64| Client {
             address: addr.into(),
             mapped: true,
@@ -328,7 +368,15 @@ mod tests {
         };
         Workspaces {
             cfg: Config::default(),
-            hypr: HyprState { monitors: vec![mon], workspaces: vec![], clients: vec![client("0xa", 2, [0.0, 0.0], [800.0, 900.0], 0), client("0xb", 2, [800.0, 0.0], [800.0, 900.0], 1)] },
+            hypr: HyprState {
+                monitors: vec![mon, hdmi],
+                workspaces,
+                clients: vec![
+                    client("0xa", 2, [0.0, 0.0], [800.0, 900.0], 0),
+                    client("0xb", 2, [800.0, 0.0], [800.0, 900.0], 1),
+                    Client { monitor: 1, ..client("0xc", 18, [1600.0, 0.0], [1920.0, 1080.0], 2) },
+                ],
+            },
             hovered: None,
             error_logged: false,
         }
@@ -360,5 +408,21 @@ mod tests {
         let ev = Mouse::Move(Pointer { targets: vec!["ws-5".into()], inside: true, ..Default::default() });
         p.mouse(&ev, &f, &mut out);
         assert!(format!("{out:?}").contains("Workspace 5 · 0 windows"));
+    }
+
+    #[test]
+    fn each_display_shows_its_own_workspaces() {
+        let p = plugin();
+        let f = Frame { output: "HDMI-A-2".into(), ..frame() };
+        let svg = p.render(&f);
+        // Only HDMI-A-2's workspaces, in id order, without the special one; the rest are empty cells.
+        let groups: Vec<&str> = svg.match_indices("<g id=\"ws-").map(|(i, _)| &svg[i + 10..i + 12]).collect();
+        assert_eq!(groups, ["18", "24"], "{svg}");
+        assert_eq!(svg.matches(r#"fill-opacity="0.4""#).count(), 4);
+        assert!(svg.contains("win-0xc") && !svg.contains("win-0xa"), "{svg}");
+        assert_eq!(p.active_workspace(&f), Some(24));
+        // On DP-1 the grid is that display's first six workspaces.
+        let svg = p.render(&frame());
+        assert!(svg.contains(r#"<g id="ws-6" >"#) && !svg.contains("ws-7") && !svg.contains("ws-18"), "{svg}");
     }
 }

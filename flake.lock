@@ -1,0 +1,44 @@
+{
+  "nodes": {
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1795234589,
+        "narHash": "sha256-f/VVvxf5RsQgWVhUtefoca5ktVg0DA2bnkMOcmSnozo=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "2786a2a72088ecf32aea5b3ec52099e6a7cff78f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "py-analogue-clock-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1761845600,
+        "narHash": "sha256-8eAp0BiqmzfIMSbd1ATFW+bBUIPEp1KsmYReJMvkC20=",
+        "owner": "miekmesserschmidt",
+        "repo": "py-analogue-clock",
+        "rev": "192a2c70727efd8254343d6bcdae4f084c9a76ae",
+        "type": "github"
+      },
+      "original": {
+        "owner": "miekmesserschmidt",
+        "repo": "py-analogue-clock",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "nixpkgs": "nixpkgs",
+        "py-analogue-clock-src": "py-analogue-clock-src"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

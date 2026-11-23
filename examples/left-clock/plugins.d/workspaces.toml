@@ -1,6 +1,6 @@
 plugin = "workspaces"
 columns = 4
-rows = 4                   # workspaces 1–16
+rows = 4                   # up to 16 workspaces of this display
 
 [position]
 bar = "left"

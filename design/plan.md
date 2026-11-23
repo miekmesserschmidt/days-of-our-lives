@@ -883,9 +883,9 @@ Uses `dool-plugin-sdk` with feature `hypr` (no `hyprctl` process, no extra crate
 
 | Key | Default | Meaning |
 |-----|---------|---------|
-| `columns`, `rows` | `3`, `2` | grid size; shows workspaces `first .. first + columns*rows - 1` |
-| `first` | `1` | id of the top-left workspace |
-| `this_output_only` | `false` | only count windows/active state for this bar's display |
+| `columns`, `rows` | `3`, `2` | grid size (`columns*rows` cells) |
+| `this_output_only` | `true` | the grid lists the workspaces on this bar's display (in id order; unused cells are drawn empty) with that display's active workspace and windows, and the wheel steps through them. `false`: workspaces `first .. first + columns*rows - 1` of all displays, active state of the focused display |
+| `first` | `1` | id of the top-left workspace when `this_output_only = false` |
 | `show_windows` | `true` | draw window rectangles |
 | `show_numbers` | `false` | workspace number in each cell |
 | `active_color` | `"#cba6f7"` | outline/fill of the active workspace |
